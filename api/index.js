@@ -3,9 +3,14 @@ const cors = require('cors');
 const { default: mongoose } = require('mongoose');
 const User = require("./models/User");
 const app = express();
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const privateKey = '234950vsdiaojkl2jdklfdjsa;adfsf2e121';
 
-app.use(cors());
+app.use(cors({credentials:true, origin:"http://localhost:3000"}));
 app.use(express.json());
+
+const salt = bcrypt.genSaltSync(10);
 
 mongoose.connect("mongodb+srv://miguelruizlicea:s63FBpFk6mqbBqCD@cluster0.uicfb.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0");
 
@@ -13,12 +18,34 @@ mongoose.connect("mongodb+srv://miguelruizlicea:s63FBpFk6mqbBqCD@cluster0.uicfb.
 app.post('/register', async (req, res) => {
     const { username, password } = req.body;
     try {
-        const userDoc = await User.create({ username, password });
+        const userDoc = await User.create({
+            username,
+            password: bcrypt.hashSync(password, salt),
+        });
         res.json(userDoc);
     }
     catch (e) {
+        console.log(e)
         res.status(400).json(e);
     }
+});
+
+
+app.post("/login", async (req, res) => {
+    const { username, password } = req.body;
+    const userDoc = await User.findOne({ username });
+    res.json(userDoc);
+    const passValid = bcrypt.compareSync(password, userDoc.password);
+    if (passValid) {
+        jwt.sign({ username, id: userDoc._id, id }, privateKey, {}, (err, token) => {
+            if (err) throw err;
+            res.cookie('token', token).json("ok")
+        });
+        //Logged in
+    } else {
+        res.status(400).json("Wrong creds");
+    }
+
 });
 // mongodb+srv://miguelruizlicea:s63FBpFk6mqbBqCD@cluster0.uicfb.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0
 //We are @ 1 hour 2 minutes
