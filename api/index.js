@@ -41,7 +41,10 @@ app.post("/login", async (req, res) => {
     if (passValid) {
         jwt.sign({ username, id: userDoc._id }, privateKey, {}, (err, token) => {
             if (err) throw err;
-            res.cookie('token', token).json("ok")
+            res.cookie('token', token).json({
+                id:userDoc._id,
+                username,
+            });
         });
         //Logged in
     } else {
@@ -60,5 +63,10 @@ app.get('/profile', (req, res) => {
         res.json(info);
     });
 });
+
+
+app.post('/logout', (req, res) => {
+    res.cookie('token', '').json("ok");
+})
 
 app.listen(4000);
